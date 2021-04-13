@@ -37,21 +37,26 @@ def DeepFM(linear_feature_columns, dnn_feature_columns, fm_group=[DEFAULT_GROUP_
     :param task: str, ``"binary"`` for  binary logloss or  ``"regression"`` for regression loss
     :return: A Keras model instance.
     """
-
+    # 处理输入特征。
+    #利用keras Input层构建输入特征。
     features = build_input_features(
         linear_feature_columns + dnn_feature_columns)
 
+    # 线性部分
     inputs_list = list(features.values())
 
     linear_logit = get_linear_logit(features, linear_feature_columns, seed=seed, prefix='linear',
                                     l2_reg=l2_reg_linear)
 
+
+    # fm部分
     group_embedding_dict, dense_value_list = input_from_feature_columns(features, dnn_feature_columns, l2_reg_embedding,
                                                                         seed, support_group=True)
 
     fm_logit = add_func([FM()(concat_func(v, axis=1))
                          for k, v in group_embedding_dict.items() if k in fm_group])
 
+    # dnn部分
     dnn_input = combined_dnn_input(list(chain.from_iterable(
         group_embedding_dict.values())), dense_value_list)
     dnn_output = DNN(dnn_hidden_units, dnn_activation, l2_reg_dnn, dnn_dropout, dnn_use_bn, seed=seed)(dnn_input)

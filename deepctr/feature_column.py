@@ -18,10 +18,12 @@ class SparseFeat(namedtuple('SparseFeat',
                              'embedding_name',
                              'group_name', 'trainable'])):
     __slots__ = ()
+    #"限制属性用的。slots里边什么也没有，那么定义name可以吗？"
 
     def __new__(cls, name, vocabulary_size, embedding_dim=4, use_hash=False, dtype="int32", embeddings_initializer=None,
                 embedding_name=None,
                 group_name=DEFAULT_GROUP_NAME, trainable=True):
+        ##"""构造函数，创建一个cls类的实例"""
 
         if embedding_dim == "auto":
             embedding_dim = 6 * int(pow(vocabulary_size, 0.25))
@@ -121,6 +123,10 @@ def get_feature_names(feature_columns):
 
 
 def build_input_features(feature_columns, prefix=''):
+    """
+    feature_columns: list, 内容是SparseFeat, DenseFeat, VarLenSparseFeat
+    return : OrderedDict,
+    """
     input_features = OrderedDict()
     for fc in feature_columns:
         if isinstance(fc, SparseFeat):
@@ -146,6 +152,10 @@ def build_input_features(feature_columns, prefix=''):
 
 def get_linear_logit(features, feature_columns, units=1, use_bias=False, seed=1024, prefix='linear',
                      l2_reg=0):
+    """
+    features: OrderedDict, {key: Input}形式
+    feature_columns: 特征。Input层转换后
+    """
     linear_feature_columns = copy(feature_columns)
     for i in range(len(linear_feature_columns)):
         if isinstance(linear_feature_columns[i], SparseFeat):
@@ -183,13 +193,19 @@ def get_linear_logit(features, feature_columns, units=1, use_bias=False, seed=10
 
 def input_from_feature_columns(features, feature_columns, l2_reg, seed, prefix='', seq_mask_zero=True,
                                support_dense=True, support_group=False):
-    sparse_feature_columns = list(
-        filter(lambda x: isinstance(x, SparseFeat), feature_columns)) if feature_columns else []
+    """
+    input: features, feature_columns
+    output: embedding , dense
+
+    """
+    sparse_feature_columns = list(filter(lambda x: isinstance(x, SparseFeat), feature_columns)) if feature_columns else []
     varlen_sparse_feature_columns = list(
         filter(lambda x: isinstance(x, VarLenSparseFeat), feature_columns)) if feature_columns else []
 
+    ## 稀疏特征进行embedding
     embedding_matrix_dict = create_embedding_matrix(feature_columns, l2_reg, seed, prefix=prefix,
                                                     seq_mask_zero=seq_mask_zero)
+
     group_sparse_embedding_dict = embedding_lookup(embedding_matrix_dict, features, sparse_feature_columns)
     dense_value_list = get_dense_input(features, feature_columns)
     if not support_dense and len(dense_value_list) > 0:
